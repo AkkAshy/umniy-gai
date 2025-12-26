@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   Receipt,
@@ -12,16 +13,15 @@ import {
   AlertCircle,
   Clock,
   Send,
+  Loader2,
 } from "lucide-react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/i18n/context"
+import { getDashboardStats, getFines, getOrders } from "@/lib/api"
 import {
-  mockDashboardStats,
-  mockFines,
-  mockOrders,
   violationsChartData,
   violationsByTypeData,
   formatCurrency,
@@ -55,17 +55,60 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 }
 
+interface DashboardStats {
+  fines_today: number
+  fines_amount: string
+  fines_month: number
+  fines_amount_month: string
+  cameras_active: number
+  cameras_total: number
+  impounded_vehicles: number
+  pending_orders: number
+  active_closures: number
+  patrols_on_duty: number
+}
+
 export default function DashboardPage() {
   const { t } = useLanguage()
-  const stats = mockDashboardStats
-  const recentFines = mockFines.slice(0, 5)
-  const recentOrders = mockOrders.filter((o) => o.status === "new")
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentFines, setRecentFines] = useState<any[]>([])
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const statCards = [
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  async function loadData() {
+    setIsLoading(true)
+    try {
+      const [statsResult, finesResult, ordersResult] = await Promise.all([
+        getDashboardStats(),
+        getFines({ page_size: 5 }),
+        getOrders({ status: "new", page_size: 5 }),
+      ])
+
+      if (statsResult.success && statsResult.data) {
+        setStats(statsResult.data)
+      }
+      if (finesResult.success && finesResult.data) {
+        setRecentFines(finesResult.data.results)
+      }
+      if (ordersResult.success && ordersResult.data) {
+        setRecentOrders(ordersResult.data.results)
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const statCards = stats ? [
     {
       title: t.dashboard.finesToday,
-      value: stats.finesToday,
-      subvalue: formatCurrency(stats.finesAmount),
+      value: stats.fines_today,
+      subvalue: formatCurrency(parseFloat(stats.fines_amount)),
       icon: Receipt,
       trend: "+12%",
       trendUp: true,
@@ -74,34 +117,34 @@ export default function DashboardPage() {
     },
     {
       title: t.dashboard.camerasActive,
-      value: `${stats.camerasActive}/${stats.camerasTotal}`,
+      value: `${stats.cameras_active}/${stats.cameras_total}`,
       icon: Camera,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
     },
     {
       title: t.dashboard.impoundedVehicles,
-      value: stats.impoundedVehicles,
+      value: stats.impounded_vehicles,
       icon: Car,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
     {
       title: t.dashboard.pendingOrders,
-      value: stats.pendingOrders,
+      value: stats.pending_orders,
       icon: FileText,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
-      alert: stats.pendingOrders > 0,
+      alert: stats.pending_orders > 0,
     },
     {
       title: t.dashboard.patrolsOnDuty,
-      value: stats.patrolsOnDuty,
+      value: stats.patrols_on_duty,
       icon: Users,
       color: "text-cyan-500",
       bgColor: "bg-cyan-500/10",
     },
-  ]
+  ] : []
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -128,6 +171,16 @@ export default function DashboardPage() {
       <Badge className={colors[priority]}>
         {labels[priority] || priority}
       </Badge>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </MainLayout>
     )
   }
 
@@ -285,28 +338,28 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t.dashboard.recentFines}</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => window.location.href = "/fines"}>
                 {t.common.all}
               </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentFines.map((fine) => (
+                {recentFines.length > 0 ? recentFines.map((fine) => (
                   <div
                     key={fine.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col">
-                        <span className="font-medium">{fine.plateNumber}</span>
+                        <span className="font-medium">{fine.plate_number}</span>
                         <span className="text-sm text-muted-foreground">
-                          {t.fines.violationTypes[fine.violationType as keyof typeof t.fines.violationTypes]}
+                          {t.fines.violationTypes[fine.violation_type as keyof typeof t.fines.violationTypes] || fine.violation_type}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="font-medium">{formatCurrency(fine.amount)}</p>
+                        <p className="font-medium">{formatCurrency(parseFloat(fine.amount))}</p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {formatDateTime(fine.datetime)}
@@ -315,7 +368,11 @@ export default function DashboardPage() {
                       {getStatusBadge(fine.status)}
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {t.common.noData}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -324,7 +381,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t.dashboard.recentOrders}</CardTitle>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => window.location.href = "/orders"}>
                 {t.common.all}
               </Button>
             </CardHeader>
@@ -347,7 +404,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <div className="text-xs text-muted-foreground">
-                          {t.orders.createdBy}: {order.createdBy}
+                          {t.orders.createdBy}: {order.created_by}
                         </div>
                         <Button size="sm">
                           <Send className="h-4 w-4 mr-1" />

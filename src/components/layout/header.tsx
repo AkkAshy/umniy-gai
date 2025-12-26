@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Search,
@@ -31,12 +32,20 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useLanguage } from "@/lib/i18n/context"
+import { useAuth } from "@/lib/auth-context"
 import { Language } from "@/lib/i18n/translations"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useLanguage()
+  const { user, logout } = useAuth()
+  const router = useRouter()
   const [notifications] = useState(3)
+
+  const handleLogout = () => {
+    logout()
+    router.push("/login")
+  }
 
   const languageLabels: Record<Language, string> = {
     ru: "Русский",
@@ -120,7 +129,7 @@ export function Header() {
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  АЮ
+                  {user?.name?.slice(0, 2).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -128,9 +137,9 @@ export function Header() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">А. Юсупов</p>
+                <p className="text-sm font-medium leading-none">{user?.name || "Пользователь"}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  Начальник ГАИ
+                  {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -139,12 +148,12 @@ export function Header() {
               <User className="mr-2 h-4 w-4" />
               {t.common.profile}
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
               <Settings className="mr-2 h-4 w-4" />
               {t.common.settings}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               {t.common.logout}
             </DropdownMenuItem>
