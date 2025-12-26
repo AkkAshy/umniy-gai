@@ -1,6 +1,6 @@
 // API клиент для интеграции с Умным городом
 
-const SMART_CITY_URL = process.env.NEXT_PUBLIC_SMART_CITY_URL || "http://localhost:3000"
+const SMART_CITY_URL = process.env.NEXT_PUBLIC_SMART_CITY_URL || "https://umniygorod.vercel.app"
 const GAI_API_KEY = process.env.NEXT_PUBLIC_GAI_API_KEY || "gai-secret-key-2025"
 
 interface ApiResponse<T = any> {

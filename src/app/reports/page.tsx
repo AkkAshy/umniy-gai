@@ -287,9 +287,9 @@ export default function ReportsPage() {
                         borderColor: "hsl(var(--border))",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number, name: string) => [
-                        name === "fines" ? value : formatCurrency(value),
-                        name === "fines" ? "Штрафов" : "Сумма",
+                      formatter={(value) => [
+                        typeof value === "number" ? value : 0,
+                        "Штрафов",
                       ]}
                     />
                     <Bar dataKey="fines" fill="hsl(221.2 83.2% 53.3%)" radius={[4, 4, 0, 0]} />
@@ -318,7 +318,7 @@ export default function ReportsPage() {
                         borderColor: "hsl(var(--border))",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number) => [value, "Штрафов"]}
+                      formatter={(value) => [typeof value === "number" ? value : 0, "Штрафов"]}
                     />
                     <Line
                       type="monotone"

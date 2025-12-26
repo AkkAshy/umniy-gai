@@ -57,7 +57,7 @@ const itemVariants = {
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage()
   const { theme, setTheme } = useTheme()
-  const [smartCityUrl, setSmartCityUrl] = useState("http://localhost:3000")
+  const [smartCityUrl, setSmartCityUrl] = useState("https://umniygorod.vercel.app")
   const [apiKey, setApiKey] = useState("gai-secret-key-2025")
   const [connectionStatus, setConnectionStatus] = useState<"idle" | "checking" | "success" | "error">("idle")
 
