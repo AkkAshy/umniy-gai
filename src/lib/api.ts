@@ -241,6 +241,21 @@ export async function markFinePaid(id: string): Promise<ApiResponse> {
   return apiRequest(`/api/fines/${id}/mark_paid/`, { method: "POST" })
 }
 
+export async function cancelFine(id: string, reason: string): Promise<ApiResponse> {
+  return apiRequest(`/api/fines/${id}/cancel/`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export async function sendAllFinesToSmartCity(): Promise<ApiResponse> {
+  return apiRequest("/api/fines/send_all_to_smart_city/", { method: "POST" })
+}
+
+export async function getFinesStatistics(): Promise<ApiResponse> {
+  return apiRequest("/api/fines/statistics/")
+}
+
 // ==================== CAMERAS API ====================
 
 export async function getCameras(params?: Record<string, any>): Promise<ApiResponse<PaginatedResponse<any>>> {
@@ -297,6 +312,18 @@ export async function updateImpoundedVehicle(id: string, data: any): Promise<Api
 
 export async function releaseVehicle(id: string): Promise<ApiResponse> {
   return apiRequest(`/api/impound/${id}/release/`, { method: "POST" })
+}
+
+export async function markImpoundPaid(id: string): Promise<ApiResponse> {
+  return apiRequest(`/api/impound/${id}/mark_paid/`, { method: "POST" })
+}
+
+export async function sendImpoundToSmartCity(id: string): Promise<ApiResponse> {
+  return apiRequest(`/api/impound/${id}/send_to_smart_city/`, { method: "POST" })
+}
+
+export async function getImpoundStatistics(): Promise<ApiResponse> {
+  return apiRequest("/api/impound/statistics/")
 }
 
 // ==================== PARKING API ====================
@@ -443,6 +470,16 @@ export async function getViolationsByType(): Promise<ApiResponse<any>> {
   return apiRequest("/api/dashboard/violations-by-type/")
 }
 
+// ==================== INTEGRATION API ====================
+
+export async function getIntegrationStatus(): Promise<ApiResponse<any>> {
+  return apiRequest("/api/webhooks/status/")
+}
+
+export async function testSmartCityConnection(): Promise<ApiResponse<any>> {
+  return apiRequest("/api/webhooks/test-connection/", { method: "POST" })
+}
+
 // ==================== SMART CITY INTEGRATION ====================
 
 // Отправка штрафов в Умный город (через бэкенд)
@@ -473,41 +510,6 @@ export async function sendFinesToSmartCity(fines: any[]): Promise<ApiResponse> {
     }
   } catch (error) {
     console.error("Error sending fines to Smart City:", error)
-    return {
-      success: false,
-      error: "Connection failed. Check if Smart City is running.",
-    }
-  }
-}
-
-// Отправка данных штрафстоянки в Умный город
-export async function sendImpoundToSmartCity(vehicles: any[]): Promise<ApiResponse> {
-  try {
-    const response = await fetch(`${SMART_CITY_URL}/api/gai/impound`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": GAI_API_KEY,
-      },
-      body: JSON.stringify({ vehicles }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.message || "Failed to send impound data",
-      }
-    }
-
-    return {
-      success: true,
-      message: data.message,
-      data: data,
-    }
-  } catch (error) {
-    console.error("Error sending impound data to Smart City:", error)
     return {
       success: false,
       error: "Connection failed. Check if Smart City is running.",
